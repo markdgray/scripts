@@ -3,7 +3,6 @@
 OVN_K8S=~/ovn-kubernetes
 export KUBECONFIG=${HOME}/admin.conf
 
-
 function 1_start_kind() {
 	pushd $OVN_K8S/contrib
 	./kind.sh
@@ -14,6 +13,11 @@ function 1_stop_kind() {
 	pushd $OVN_K8S/contrib
 	./kind.sh --delete --name ovn
 	popd
+}
+
+function 1_restart_kind() {
+	1_stop_kind
+	1_start_kind
 }
 
 
