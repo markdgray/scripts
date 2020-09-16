@@ -37,12 +37,28 @@ stop() {
 
 
 test() {
+	echo "Numer of netlink sockets is: `lsof -p $(pidof ovs-vswitchd) \
+	   |grep -c GENERIC `"
 	perf record -e sched:sched_wakeup,irq:softirq_entry -ag &
 	sleep 2 
 	ip netns exec left arping -I left0 -c 1 172.31.110.11
 	sleep 2 
 	kill %1
 	sleep 2 
+	ovs-ofctl del-flows br0
+	ip -n left link set left0 netns 1
+	ip -n right link set right0 netns 1
+	ip link set up right0
+	ip link set up left0
+	ovs-ofctl add-flow br0 action=controller,center-right
+	if [ -f ../network-tools/weed ]; then
+		../network-tools/weed -c 100000 -i 1m -d rand -s rand left0 right0
+		../network-tools/weed  -d rand -s rand left0 right0
+	fi
+	ovs-ofctl del-flows br0
+	ovs-ofctl add-flow br0 action=NORMAL
+	ip link set left0 netns left
+	ip link set right0 netns right
 	perf script
 
 }
