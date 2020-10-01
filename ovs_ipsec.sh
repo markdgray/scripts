@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# <script_name> <verb> <IP1> <IP2>
+ 
 RED="\033[0;31m"
 BLUE="\033[0;34m"
 GREEN="\033[0;32m"
