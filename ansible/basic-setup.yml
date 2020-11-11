@@ -1,0 +1,75 @@
+---
+- name: Basic Lab Setup
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Install Base Packages
+    yum:
+      name:
+      - git
+      - vim
+      state: present
+
+  - name: Add wheel group
+    group:
+      name: wheel
+      state: present
+
+  - name: Allow 'wheel' group to have passwordless sudo
+    lineinfile:
+      dest: /etc/sudoers
+      state: present
+      regexp: '^%wheel'
+      line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+      validate: visudo -cf %s
+
+  - name: Add User Accounts
+    user:
+      name: magray
+      comment: Mark Gray
+      generate_ssh_key: yes
+      group: wheel
+        
+  - name: Generate 'root' SSH key-pair
+    user:
+      name: root
+      generate_ssh_key: yes
+
+# Not the best way to share keys as this must take place serially
+  - name: Fetch 'magray' Keys
+    fetch:
+      src: /home/magray/.ssh/id_rsa.pub
+      dest: /tmp/public_ssh_keys
+  - name: Fetch 'root' Keys
+    fetch:
+      src: /root/.ssh/id_rsa.pub
+      dest: /tmp/public_ssh_keys
+
+  - name: Authorize Keys
+    authorized_key:
+      user: "{{ item[1] }}"
+      state: present
+      key: "{{ lookup('file', '/tmp/public_ssh_keys/' + item[0] + item[2] + '/.ssh/id_rsa.pub') }}"
+    with_nested:
+      - "{{ ansible_play_hosts_all }}"
+      - [ 'magray', 'root' ]
+      - [ '/root', '/home/magray' ]
+
+  - name: Create /etc/hosts.aliases
+    file:
+      path: "/etc/hosts.aliases"
+      state: touch
+  - name: Update the /etc/hosts.aliases with all nodes
+    lineinfile:
+      path: "/etc/hosts.aliases"
+      regexp: "^{{ item }}"
+      line: "{{ item }}\t{{ hostvars[item].ansible_host }}"
+      state: present
+    loop: "{{ ansible_play_hosts_all }}"
+  - name: Update the /etc/profile with HOSTALIASES env variable
+    lineinfile:
+      path: "/etc/profile"
+      regexp: "export HOSTALIASES=/etc/hosts.aliases"
+      line: "export HOSTALIASES=/etc/hosts.aliases"
+      state: present
