@@ -1,7 +1,6 @@
 #!/bin/bash  -e
 
 OVN_K8S=~/ovn-kubernetes
-export KUBECONFIG=${HOME}/admin.conf
 
 function 1_start_kind() {
 	pushd $OVN_K8S/contrib
@@ -125,14 +124,15 @@ function 1_image_build {
 	rm shell-demo.yaml
 	wget https://k8s.io/examples/application/shell-demo.yaml
 	sed -i "/hostNetwork/d" shell-demo.yaml
+	sed -i "s/image.*nginx/image: quay.io\/mdgray\/utils:nginx/g" shell-demo.yaml
 	cat shell-demo.yaml | sed "s/shell-demo/shell-demo2/" > shell-demo2.yaml
 	echo "  nodeName: ovn-worker" >> shell-demo.yaml
 	echo "  nodeName: ovn-worker2" >> shell-demo2.yaml
 	kubectl apply -f shell-demo.yaml
 	kubectl apply -f shell-demo2.yaml
 
-	kubectl wait --for=condition=Ready pod/shell-demo
-	kubectl wait --for=condition=Ready pod/shell-demo2
+	kubectl wait --timeout=300s --for=condition=Ready pod/shell-demo
+	kubectl wait --timeout=300s --for=condition=Ready pod/shell-demo2
 
 	kubectl exec shell-demo2 -- apt-get update
 	kubectl exec shell-demo2 -- apt-get -y install iputils-ping iproute2 procps
