@@ -1,0 +1,65 @@
+---
+
+- name: Configure IPsec (self-signed)
+  hosts: n77 n91
+  vars:
+    target_dir: /root/
+    tunnel_type: gre
+    branch: fix/ipsec_tunnel_port_warnings/1906701
+
+  tasks:
+  - import_tasks: ovs.yml
+
+  - name: Generate cert
+    command:
+      cmd: /usr/local/bin/ovs-pki req --force -u {{ inventory_hostname  }} 
+      chdir: "{{ target_dir }}/test"
+
+  - name: Self-sign cert
+    command:
+      cmd: /usr/local/bin/ovs-pki self-sign --force {{ inventory_hostname }} 
+      chdir: "{{ target_dir }}/test"
+
+  - name: Synchronize all signed certs
+    synchronize:
+      src: "{{ target_dir }}/test/"
+      dest: "{{ target_dir }}/test/"
+      dirs: yes
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+
+  - name: Configure OVS IPsec (Private Key)
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: other_config
+      key: private_key 
+      value: "{{ target_dir }}/test/{{ inventory_hostname }}-privkey.pem"
+  - name: Configure OVS IPsec (Certificate)
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: other_config
+      key: certificate
+      value: "{{ target_dir }}/test/{{ inventory_hostname }}-cert.pem"
+  - name: Configure OVS IPsec (CA Certificate)
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: other_config
+      key: ca_cert
+      value: absent
+      state: absent
+
+  - name: Remove Tunnel Ports
+    openvswitch.openvswitch.openvswitch_port:
+      bridge: br-ipsec
+      port: tun
+      state: absent
+        
+  - name: Setup Tunnel Ports
+    openvswitch.openvswitch.openvswitch_port:
+      bridge: br-ipsec
+      port: tun
+      state: present
+      set: "Interface tun type={{ tunnel_type }}  options:remote_ip={{ hostvars[remote_name]['ansible_default_ipv4']['address'] }} options:remote_cert={{ target_dir }}/test/{{ remote_name }}-cert.pem"
+        

@@ -1,0 +1,82 @@
+---
+
+- name: Configure IPsec (CA-signed)
+  hosts: n77 n91
+  vars:
+    tunnel_type: gre
+    target_dir: /root/
+    branch: fix/ipsec_tunnel_port_warnings/1906701
+  tasks:
+  - import_tasks: ovs.yml
+
+  - name: Generate cert
+    command:
+      cmd: /usr/local/bin/ovs-pki req --force -u {{ item }} 
+      chdir: "{{ target_dir }}/test"
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+    loop: "{{ ansible_play_hosts_all }}"
+    run_once: true
+
+  - name: Create CA
+    command:
+      cmd: /usr/local/bin/ovs-pki init --force
+      creates: /usr/local/var/lib/openvswitch/pki
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+    run_once: true
+
+  - name: Sign all certs
+    command:
+      cmd: /usr/local/bin/ovs-pki sign --force -b {{ item }} switch
+      chdir: "{{ target_dir }}/test"
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+    loop: "{{ ansible_play_hosts_all }}"
+    run_once: true
+
+  - name: Synchronize all signed certs
+    synchronize:
+      src: "{{ target_dir }}/test/"
+      dest: "{{ target_dir }}/test/"
+      dirs: yes
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+
+  - name: Copy CA certs
+    synchronize:
+      src: /usr/local/var/lib/openvswitch/pki/switchca/cacert.pem
+      dest: "{{ target_dir }}/test/"
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+
+  - name: Configure OVS IPsec (Private Key)
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: other_config
+      key: private_key 
+      value: "{{ target_dir }}/test/{{ inventory_hostname }}-privkey.pem"
+  - name: Configure OVS IPsec (Certificate)
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: other_config
+      key: certificate
+      value: "{{ target_dir }}/test/{{ inventory_hostname }}-cert.pem"
+  - name: Configure OVS IPsec (CA Certificate)
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: other_config
+      key: ca_cert
+      value: "{{ target_dir }}/test/cacert.pem"
+
+  - name: Remove Tunnel Ports
+    openvswitch.openvswitch.openvswitch_port:
+      bridge: br-ipsec
+      port: tun
+      state: absent
+        
+  - name: Setup Tunnel Ports
+    openvswitch.openvswitch.openvswitch_port:
+      bridge: br-ipsec
+      port: tun
+      state: present
+      set: Interface tun type={{ tunnel_type }}  options:remote_ip={{ hostvars[remote_name]['ansible_default_ipv4']['address'] }} options:remote_name={{ remote_name }}
+        
