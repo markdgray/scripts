@@ -1,0 +1,64 @@
+---
+- name: OVS RPM Install
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Get dependencies
+    become: true
+    yum:
+      name:
+        - git
+        - gcc
+        - libtool
+        - autoconf
+        - automake
+        - make
+        - libreswan
+        - libcap-ng-devel
+        - openssl-devel
+        - python36
+      state: present
+  - name: Remove openvswitch package
+    become: true
+    yum:
+      name:
+        - openvswitch
+        - openvswitch-ipsec
+        - puthon3-openvswitch
+      state: absent
+
+  - name: Download brew repo
+    get_url:
+      url: http://brew-task-repos.usersys.redhat.com/repos/scratch/zpytela/selinux-policy/3.14.3/62.el8/selinux-policy-3.14.3-62.el8-scratch.repo
+      dest: /etc/yum.repos.d
+
+  - name: Update SELinux package
+    become: true
+    yum:
+      name: selinux-policy
+      state: latest
+
+  - name: Install openvswitch package
+    become: true
+    yum:
+      name:
+        - http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/openvswitch2.13/2.13.0/79.el8fdp/x86_64/openvswitch2.13-2.13.0-79.el8fdp.x86_64.rpm
+        - http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/openvswitch2.13/2.13.0/79.el8fdp/x86_64/openvswitch2.13-ipsec-2.13.0-79.el8fdp.x86_64.rpm
+        - http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/openvswitch-selinux-extra-policy/1.0/28.el8fdp/noarch/openvswitch-selinux-extra-policy-1.0-28.el8fdp.noarch.rpm
+        - http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/openvswitch2.13/2.13.0/79.el8fdp/x86_64/python3-openvswitch2.13-2.13.0-79.el8fdp.x86_64.rpm
+      state: present
+      disable_gpg_check: True
+
+  - name: Start OVS IPsec
+    become: true
+    service:
+      name: openvswitch-ipsec
+      state: started
+
+  - name: Stop service httpd, if started
+    become: true
+    service:
+      name: ipsec
+      state: started
+

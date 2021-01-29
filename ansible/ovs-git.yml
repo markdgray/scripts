@@ -1,0 +1,96 @@
+---
+
+- name: Install OVS from Git
+  hosts: n77 n91
+  vars:
+    target_dir: /tmp
+    branch: master
+  tasks:
+  - name: Get dependencies
+    become: true
+    yum:
+      name:
+        - git
+        - gcc
+        - libtool
+        - autoconf
+        - automake
+        - make
+        - libreswan
+        - libcap-ng-devel
+        - openssl-devel
+        - python36
+      state: present
+  - name: Remove openvswitch package
+    become: true
+    yum:
+      name:
+        - openvswitch
+        - openvswitch-ipsec
+        - python3-openvswitch
+      state: absent
+
+  - name: Create test directory
+    file:
+      path: "{{ target_dir }}/test/"
+      state: directory
+
+  - name: Clone OVS
+    git:
+      repo: 'https://github.com/markdgray/ovs.git'
+      dest: "{{ target_dir }}/test/ovs"
+      version: "{{ branch }}"
+      update: yes
+
+  - name: Configure OVS build
+    shell: |
+      ./boot.sh
+      ./configure
+    args:
+      creates: "{{ target_dir }}/test/ovs/config.h"
+      chdir: "{{ target_dir }}/test/ovs"
+
+  - name: Build OVS
+    make:
+      chdir: "{{ target_dir }}/test/ovs"
+
+  - name: Install OVS
+    become: true
+    make:
+      chdir: "{{ target_dir }}/test/ovs"
+      target: install
+
+  - name: Stop OVS IPsec
+    become: true
+    command:
+      cmd: /usr/local/share/openvswitch/scripts/ovs-ctl stop-ovs-ipsec
+    environment:
+      OVS_RUNDIR: /usr/local/var/run/openvswitch/
+
+  - name: Stop OVS
+    become: true
+    command:
+      cmd: /usr/local/share/openvswitch/scripts/ovs-ctl stop
+    environment:
+      OVS_RUNDIR: /usr/local/var/run/openvswitch/
+
+  - name: Start OVS
+    become: true
+    command:
+      cmd: /usr/local/share/openvswitch/scripts/ovs-ctl start
+    environment:
+      OVS_RUNDIR: /usr/local/var/run/openvswitch/
+
+  - name: Start OVS IPsec
+    become: true
+    command:
+      cmd: /usr/local/share/openvswitch/scripts/ovs-ctl --ike-daemon=libreswan start-ovs-ipsec
+    environment:
+      PYTHONPATH: /usr/local/share/openvswitch/python/
+      OVS_RUNDIR: /usr/local/var/run/openvswitch/
+
+  - name: Start service ipsec, if started
+    become: true
+    service:
+      name: ipsec
+      state: started

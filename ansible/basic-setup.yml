@@ -9,6 +9,7 @@
       name:
       - git
       - vim
+      - rsync
       state: present
 
   - name: Add wheel group
@@ -24,13 +25,27 @@
       line: '%wheel ALL=(ALL) NOPASSWD: ALL'
       validate: visudo -cf %s
 
+  - name: Update sudo path
+    lineinfile:
+      dest: /etc/sudoers
+      state: present
+      regexp: 'secure_path'
+      line: 'Defaults    secure_path = /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+      validate: visudo -cf %s
+
   - name: Add User Accounts
     user:
       name: magray
       comment: Mark Gray
       generate_ssh_key: yes
       group: wheel
-        
+
+  - name: Add User Accounts
+    user:
+      name: vagrant
+      generate_ssh_key: yes
+      group: wheel
+
   - name: Generate 'root' SSH key-pair
     user:
       name: root
@@ -45,6 +60,10 @@
     fetch:
       src: /root/.ssh/id_rsa.pub
       dest: /tmp/public_ssh_keys
+  - name: Fetch 'vagrant' Keys
+    fetch:
+      src: /home/vagrant/.ssh/id_rsa.pub
+      dest: /tmp/public_ssh_keys
 
   - name: Authorize Keys
     authorized_key:
@@ -53,8 +72,8 @@
       key: "{{ lookup('file', '/tmp/public_ssh_keys/' + item[0] + item[2] + '/.ssh/id_rsa.pub') }}"
     with_nested:
       - "{{ ansible_play_hosts_all }}"
-      - [ 'magray', 'root' ]
-      - [ '/root', '/home/magray' ]
+      - [ 'magray', 'root', 'vagrant' ]
+      - [ '/root', '/home/magray', '/home/vagrant' ]
 
   - name: Create /etc/hosts.aliases
     file:

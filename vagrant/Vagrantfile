@@ -1,0 +1,30 @@
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+Vagrant.require_version ">=1.7.0"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+# Need to run as root which means we may need to install
+# some ansible collections to root.
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.qemu_use_session = false
+    libvirt.memory = 16192
+  end
+
+  config.vm.box = "generic/rhel8"
+  #config.vm.synced_folder ".", "/vagrant"
+
+  config.vm.define "n77"
+  config.vm.define "n91"
+
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "dummy.yml"
+    ansible.verbose = true
+    ansible.host_vars = {
+      "n77" => {"local_ip" => "192.0.0.1",
+                "remote_name" => "n91"},
+      "n91" => {"local_ip" => "192.0.0.2",
+                "remote_name" => "n77"}
+    }
+  end
+end
