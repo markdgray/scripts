@@ -4,13 +4,38 @@
   become: true
 
   tasks:
+  - name: Virtual Box add repository (RHEL)
+    yum_repository:
+      name: virtual_box
+      description: Virtual Box Repo
+      baseurl: http://download.virtualbox.org/virtualbox/rpm/el/$releasever/$basearch
+    when: ansible_facts['distribution'] == "RedHat"
+  - name: Virtual Box add repository (Fedora)
+    yum_repository:
+      name: virtual_box
+      description: Virtual Box Repo
+      baseurl: http://download.virtualbox.org/virtualbox/rpm/fedora/$releasever/$basearch
+    when: ansible_facts['distribution'] == "Fedora"
+
   - name: Install Base Packages
     yum:
       name:
       - git
       - vim
       - rsync
+      - gcc
+      - zlib-devel
+      - ruby
+      - ruby-devel
       state: present
+
+  - name: Install Base Packages (GPG Check Disabled)
+    yum:
+      name:
+      - https://releases.hashicorp.com/vagrant/2.2.14/vagrant_2.2.14_x86_64.rpm
+      - VirtualBox-6.1
+      state: present
+      disable_gpg_check: yes
 
   - name: Add wheel group
     group:
