@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
   - name: pod2
-    image: docker.io/centos/tools:latest
+    image: quay.io/markdgray/centos:latest
     command:
       - /sbin/init
-  nodeName: ip-10-0-157-28.us-west-1.compute.internal 
+  nodeName: master-1.ostest.test.metalkube.org
