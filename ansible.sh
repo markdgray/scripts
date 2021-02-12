@@ -6,9 +6,9 @@ if [ -z ${1} ]
 then
 	echo "Usage: ${0} <Ansible Playbook>"
 	echo "======================================"
-	ls -1 ansible/*.yml
+	pushd ${DIR}/ansible >/dev/null && ls -1 *.yml && popd >/dev/null
 	exit 1
 fi
 ansible -i ${DIR}/vagrant/.vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory -m ping n77
-ansible -i ${DIR}/vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory -m ping n91
+ansible -i ${DIR}/vagrant/.vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory -m ping n91
 ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook -u root -i ${DIR}/vagrant/.vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory ${DIR}/ansible/${1}

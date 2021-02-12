@@ -3,16 +3,15 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.require_version ">=1.7.0"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-
-# Need to run as root which means we may need to install
-# some ansible collections to root.
-  config.vm.provider :libvirt do |libvirt|
-    libvirt.qemu_use_session = false
-    libvirt.memory = 16192
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 16192
+    v.cpus = 2
   end
 
+  config.vm.network "private_network", type: "dhcp"
+
   config.vm.box = "generic/rhel8"
-  #config.vm.synced_folder ".", "/vagrant"
+  config.vm.synced_folder "~/", "/vagrant"
 
   config.vm.define "n77"
   config.vm.define "n91"

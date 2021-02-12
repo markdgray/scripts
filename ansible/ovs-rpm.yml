@@ -5,7 +5,6 @@
 
   tasks:
   - name: Get dependencies
-    become: true
     yum:
       name:
         - git
@@ -20,7 +19,6 @@
         - python36
       state: present
   - name: Remove openvswitch package
-    become: true
     yum:
       name:
         - openvswitch
@@ -34,13 +32,11 @@
       dest: /etc/yum.repos.d
 
   - name: Update SELinux package
-    become: true
     yum:
       name: selinux-policy
       state: latest
 
   - name: Install openvswitch package
-    become: true
     yum:
       name:
         - http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/openvswitch2.13/2.13.0/79.el8fdp/x86_64/openvswitch2.13-2.13.0-79.el8fdp.x86_64.rpm
@@ -51,13 +47,11 @@
       disable_gpg_check: True
 
   - name: Start OVS IPsec
-    become: true
     service:
       name: openvswitch-ipsec
       state: started
 
   - name: Stop service httpd, if started
-    become: true
     service:
       name: ipsec
       state: started

@@ -27,6 +27,7 @@
       - zlib-devel
       - ruby
       - ruby-devel
+      - tcpdump
       state: present
 
   - name: Install Base Packages (GPG Check Disabled)

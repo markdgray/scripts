@@ -1,0 +1,104 @@
+---
+
+- name: Install OVN from Git
+  hosts: n77 n91
+  vars:
+    target_dir: /root/
+    branch: master
+  become: true
+  tasks:
+  - name: Get dependencies
+    yum:
+      name:
+        - git
+        - gcc
+        - libtool
+        - autoconf
+        - automake
+        - make
+        - libreswan
+        - libcap-ng-devel
+        - openssl-devel
+        - python36
+      state: present
+
+  - name: Clone OVN
+    git:
+      repo: 'https://github.com/markdgray/ovn.git'
+      dest: "{{ target_dir }}/ovn"
+      version: "{{ branch }}"
+      update: yes
+
+  - name: Configure OVN build
+    shell: |
+      ./boot.sh
+      ./configure --with-ovs-source=/root/ovs
+    args:
+      creates: "{{ target_dir }}/ovn/config.h"
+      chdir: "{{ target_dir }}/ovn"
+
+  - name: Build OVN
+    make:
+      chdir: "{{ target_dir }}/ovn"
+
+  - name: Install OVN
+    make:
+      chdir: "{{ target_dir }}/ovn"
+      target: install
+
+  - name: Set system-id
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: external_ids 
+      key: system-id 
+      value: "{{ inventory_hostname }}"
+
+  - name: Set ovn-remote
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: external_ids 
+      key: ovn-remote
+      value: "tcp:{{ hostvars[ansible_play_hosts_all.0]['ansible_eth1']['ipv4']['address'] }}:6642"
+
+  - name: Set ovn-encap-ip
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: external_ids 
+      key: ovn-encap-ip
+      value: "{{ ansible_eth1.ipv4.address }}"
+
+  - name: Set ovn-encap-type
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: external_ids 
+      key: ovn-encap-type
+      value: "geneve"
+
+  - name: Stop OVN Northd
+    command:
+      cmd: /usr/local/share/ovn/scripts/ovn-ctl stop_northd
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+
+  - name: Stop OVN Controller
+    command:
+      cmd: /usr/local/share/ovn/scripts/ovn-ctl stop_controller
+
+  - name: Start OVN Northd
+    command:
+      cmd: /usr/local/share/ovn/scripts/ovn-ctl start_northd
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+
+  - name: Start OVN Controller
+    command:
+      cmd: /usr/local/share/ovn/scripts/ovn-ctl start_controller
+
+  - name: Enable TCP connectivity for OVN DBs
+    shell: |
+      ovn-nbctl set-connection ptcp:6641:0.0.0.0 -- set connection . inactivity_probe=60000
+      ovn-sbctl set-connection ptcp:6642:0.0.0.0 -- set connection . inactivity_probe=60000
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+

@@ -1,0 +1,6 @@
+---
+
+- name:  Dummy
+  hosts: n77 n91
+  tasks:
+  - ping:

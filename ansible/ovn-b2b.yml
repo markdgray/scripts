@@ -1,0 +1,30 @@
+---
+
+- name: Configure OVN
+  hosts: n77 n91
+  become: true
+  tasks:
+  - name: Setup 'vm' Ports
+    openvswitch.openvswitch.openvswitch_port:
+      bridge: br-int
+      port: "{{ inventory_hostname }}" 
+      state: present
+      set: "Interface {{ inventory_hostname }} type=internal external_ids:iface-id={{ inventory_hostname }}"
+
+  - name: Set up 'vm' IP address
+    shell: |
+      ip --force addr add {{ local_ip }}/24 dev {{ inventory_hostname }} 
+      ip --force link set {{ inventory_hostname }} up
+
+  - name: Add logical switch 
+    shell: |
+      ovn-nbctl --may-exist ls-add sw0
+    environment:
+      OVN_NB_DB: "tcp:{{ hostvars[ansible_play_hosts_all.0]['ansible_eth1']['ipv4']['address'] }}:6641"
+
+  - name: Add logical ports
+    shell: |
+      ovn-nbctl --may-exist lsp-add sw0 {{ inventory_hostname }}
+      ovn-nbctl lsp-set-addresses {{ inventory_hostname }} "$(ip -o link show dev {{ inventory_hostname }} | cut -d ' ' -f20) {{ local_ip }}" 
+    environment:
+      OVN_NB_DB: "tcp:{{ hostvars[ansible_play_hosts_all.0]['ansible_eth1']['ipv4']['address'] }}:6641"
