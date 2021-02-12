@@ -1,0 +1,70 @@
+---
+
+- name: Copy keys (CA-signed)
+  hosts: n77 n91
+  vars:
+    target_dir: /root
+  become: true
+  tasks:
+  - name: Create test directory
+    file:
+      path: "{{ target_dir }}/keys/"
+      state: directory
+
+  - name: Generate cert
+    command:
+      cmd: ovs-pki req --force -u {{ item }}
+      chdir: "{{ target_dir }}/keys"
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+    loop: "{{ ansible_play_hosts_all }}"
+    run_once: true
+
+  - name: Create CA
+    command:
+      cmd: "ovs-pki init -d {{ target_dir }}/keys/ca --force"
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+    run_once: true
+
+  - name: Sign all certs
+    command:
+      cmd: ovs-pki sign --force -b {{ item }} switch
+      chdir: "{{ target_dir }}/keys"
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+    loop: "{{ ansible_play_hosts_all }}"
+    run_once: true
+
+  - name: Synchronize all certs
+    synchronize:
+      mode: pull
+      delete: yes
+      src: "{{ target_dir }}/keys/"
+      dest: ../keys/
+    when: inventory_hostname == ansible_play_hosts_all.0
+
+  - name: Copy all cert
+    synchronize:
+      src: ../keys/
+      dest: "{{ target_dir }}/keys/"
+
+  - name: Configure OVS IPsec (Private Key)
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: other_config
+      key: private_key
+      value: "{{ target_dir }}/keys/{{ inventory_hostname }}-privkey.pem"
+  - name: Configure OVS IPsec (Certificate)
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: other_config
+      key: certificate
+      value: "{{ target_dir }}/keys/{{ inventory_hostname }}-cert.pem"
+  - name: Configure OVS IPsec (CA Certificate)
+    openvswitch.openvswitch.openvswitch_db:
+      table: Open_vSwitch
+      record: .
+      col: other_config
+      key: ca_cert
+      value: "{{ target_dir }}/keys/ca/switchca/cacert.pem"
+
