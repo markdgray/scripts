@@ -13,8 +13,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "generic/rhel8"
   config.vm.synced_folder "~/", "/vagrant"
 
-  config.vm.define "n77"
-  config.vm.define "n91"
+  config.vm.define "n77" do |n77|
+    n77.vm.hostname = "n77"
+  end
+  config.vm.define "n91" do |n91|
+    n91.vm.hostname = "n91"
+  end
 
   config.vm.provision "ansible" do |ansible|
     ansible.playbook = "dummy.yml"
