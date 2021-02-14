@@ -9,6 +9,6 @@ then
 	pushd ${DIR}/ansible >/dev/null && ls -1 *.yml && popd >/dev/null
 	exit 1
 fi
-ansible -i ${DIR}/vagrant/.vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory -m ping n77
-ansible -i ${DIR}/vagrant/.vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory -m ping n91
+ANSIBLE_HOST_KEY_CHECKING=false ansible -i ${DIR}/vagrant/.vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory -m ping n77
+ANSIBLE_HOST_KEY_CHECKING=false ansible -i ${DIR}/vagrant/.vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory -m ping n91
 ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook -u root -i ${DIR}/vagrant/.vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory ${DIR}/ansible/${1}
