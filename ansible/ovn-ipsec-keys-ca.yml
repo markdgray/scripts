@@ -45,6 +45,7 @@
     synchronize:
       src: ../keys/
       dest: "{{ target_dir }}/keys/"
+      delete: yes
 
   - name: Configure OVS IPsec (Private Key)
     openvswitch.openvswitch.openvswitch_db:

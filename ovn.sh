@@ -10,3 +10,5 @@ vagrant up
 ./ansible.sh ovs-git.yml
 ./ansible.sh ovn-git.yml
 ./ansible.sh ovn-b2b.yml
+./ansible.sh ovn-ipsec-keys-ca.yml
+./ansible.sh ovn-ipsec.yml

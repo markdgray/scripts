@@ -1,0 +1,10 @@
+---
+
+- name: Configure IPsec OVN
+  hosts: n77 n91
+  become: true
+  tasks:
+  - name: Enable IPsec in nbdb
+    command:
+      cmd: ovn-nbctl set nb_global . ipsec=true
+    delegate_to: "{{ ansible_play_hosts_all.0 }}"

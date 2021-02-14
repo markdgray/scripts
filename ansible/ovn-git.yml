@@ -4,7 +4,7 @@
   hosts: n77 n91
   vars:
     target_dir: /root/
-    branch: master
+    branch: fix/ipsec_ovn-encap-ip/1924041
   become: true
   tasks:
   - name: Get dependencies
