@@ -30,6 +30,15 @@
       - tcpdump
       state: present
 
+  - name: Update Packages
+    yum:
+      name:
+      - kernel
+      state: latest
+
+  - name: Need to reboot in order to update the kernel
+    reboot:
+
   - name: Install Base Packages (GPG Check Disabled)
     yum:
       name:
