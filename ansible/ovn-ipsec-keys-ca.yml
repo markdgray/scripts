@@ -27,7 +27,7 @@
 
   - name: Sign all certs
     command:
-      cmd: ovs-pki sign --force -b {{ item }} switch
+      cmd: ovs-pki sign --force -d {{ target_dir }}/keys/ca  -b {{ item }} switch
       chdir: "{{ target_dir }}/keys"
     delegate_to: "{{ ansible_play_hosts_all.0 }}"
     loop: "{{ ansible_play_hosts_all }}"
