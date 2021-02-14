@@ -81,7 +81,7 @@
   - name: Stop OVN Northd
     command:
       cmd: /usr/local/share/ovn/scripts/ovn-ctl stop_northd
-    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+    when: inventory_hostname == ansible_play_hosts_all.0
 
   - name: Stop OVN Controller
     command:
@@ -90,7 +90,7 @@
   - name: Start OVN Northd
     command:
       cmd: /usr/local/share/ovn/scripts/ovn-ctl start_northd
-    delegate_to: "{{ ansible_play_hosts_all.0 }}"
+    when: inventory_hostname == ansible_play_hosts_all.0
 
   - name: Start OVN Controller
     command:
