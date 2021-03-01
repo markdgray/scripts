@@ -71,6 +71,11 @@
     environment:
       OVS_RUNDIR: /usr/local/var/run/openvswitch/
 
+  - name: Clear OVS database
+    file:
+      path: /usr/local/etc/openvswitch/conf.db
+      state: absent
+
   - name: Start OVS
     command:
       cmd: /usr/local/share/openvswitch/scripts/ovs-ctl start
