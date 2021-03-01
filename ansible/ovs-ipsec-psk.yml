@@ -3,7 +3,7 @@
 - name: Configure IPsec (PSK)
   hosts: n77 n91
   vars:
-    tunnel_type: gre
+    tunnel_type: ip6gre
   tasks:
   - name: Add br-ipsec
     become: true
@@ -29,5 +29,5 @@
       bridge: br-ipsec
       port: tun
       state: present
-      set: "Interface tun type={{ tunnel_type }}  options:remote_ip={{ hostvars[remote_name]['ansible_default_ipv4']['address'] }} options:psk=swordfish"
+      set: "Interface tun type={{ tunnel_type }}  options:remote_ip={{ hostvars[remote_name]['ansible_eth1']['ipv6'][0]['address'] }} options:local_ip={{ ansible_eth1.ipv6.0.address }} options:packet_type=legacy_l2 options:psk=swordfish"
 

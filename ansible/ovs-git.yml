@@ -4,7 +4,7 @@
   hosts: n77 n91
   vars:
     target_dir: /root/
-    branch: master
+    branch: feat/ipsec_ip6gre/1915687 
   become: true
   tasks:
   - name: Get dependencies
